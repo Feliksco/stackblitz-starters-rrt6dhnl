@@ -27,26 +27,43 @@ export default function IngredientsPage() {
     setIsModalOpen(true);
   };
 
+  const handleAddNew = () => {
+    setEditingIng({
+      name: '',
+      price_per_kg_l: 0,
+      kj_per_100: 0,
+      weight_per_unit: 0.001
+    });
+    setIsModalOpen(true);
+  };
+
   const handleSave = async () => {
     if (!editingIng) return;
-    const { error } = await supabase
-      .from('ingredients')
-      .update({
+
+    if (editingIng.id) {
+      // Update existing
+      await supabase.from('ingredients').update({
         name: editingIng.name,
         price_per_kg_l: parseFloat(editingIng.price_per_kg_l),
         kj_per_100: parseFloat(editingIng.kj_per_100),
         weight_per_unit: parseFloat(editingIng.weight_per_unit)
-      })
-      .eq('id', editingIng.id);
-
-    if (!error) {
-      setIsModalOpen(false);
-      fetchIngredients();
+      }).eq('id', editingIng.id);
+    } else {
+      // Create new
+      await supabase.from('ingredients').insert([{
+        name: editingIng.name,
+        price_per_kg_l: parseFloat(editingIng.price_per_kg_l),
+        kj_per_100: parseFloat(editingIng.kj_per_100),
+        weight_per_unit: parseFloat(editingIng.weight_per_unit)
+      }]);
     }
+
+    setIsModalOpen(false);
+    fetchIngredients();
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
+    if (window.confirm(`Permanently remove ${name} from pantry?`)) {
       await supabase.from('ingredients').delete().eq('id', id);
       fetchIngredients();
     }
@@ -66,25 +83,31 @@ export default function IngredientsPage() {
             <Link href="/" className="text-emerald-600 font-bold mb-2 block hover:underline">← Dashboard</Link>
             <h1 className="text-4xl font-black tracking-tight">Pantry</h1>
           </div>
-          <div className="w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <input 
-              type="text" placeholder="Search ingredients..." 
-              className="w-full md:w-64 p-4 rounded-2xl border-none ring-1 ring-slate-200 shadow-sm focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
+              type="text" placeholder="Search..." 
+              className="flex-1 sm:w-64 p-4 rounded-2xl border-none ring-1 ring-slate-200 shadow-sm focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
               onChange={(e) => setSearch(e.target.value)} 
             />
+            <button 
+              onClick={handleAddNew}
+              className="bg-slate-900 text-white px-6 py-4 rounded-2xl font-black shadow-lg hover:scale-105 transition active:scale-95 text-sm"
+            >
+              + Add New
+            </button>
           </div>
         </header>
 
-        {/* This wrapper enables horizontal scrolling on mobile */}
         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[600px]">
+            <table className="w-full text-left border-collapse min-w-[700px]">
               <thead className="bg-slate-50 border-b border-slate-100 text-[10px] uppercase font-bold text-slate-400 tracking-widest">
                 <tr>
                   <th className="p-6">Ingredient</th>
                   <th className="p-6 text-center">$/kg or L</th>
                   <th className="p-6 text-center">KJ/100g</th>
-                  <th className="p-6 text-right">Actions</th>
+                  <th className="p-6 text-center">Edit</th>
+                  <th className="p-6 text-right text-red-400">Remove</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -94,15 +117,28 @@ export default function IngredientsPage() {
                       <div className="flex flex-col">
                         <span className="font-bold text-slate-800 leading-tight">{ing.name}</span>
                         {ing.price_per_kg_l === 0 && (
-                          <span className="mt-1 w-max bg-red-50 text-red-500 text-[8px] px-2 py-0.5 rounded-full font-black uppercase">Missing Price</span>
+                          <span className="mt-1 w-max bg-red-50 text-red-500 text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">No Price Set</span>
                         )}
                       </div>
                     </td>
                     <td className="p-6 text-center font-medium text-slate-600">${ing.price_per_kg_l?.toFixed(2)}</td>
                     <td className="p-6 text-center font-medium text-slate-400">{ing.kj_per_100}</td>
-                    <td className="p-6 text-right space-x-4">
-                      <button onClick={() => handleEdit(ing)} className="text-emerald-600 font-bold text-sm">Edit</button>
-                      <button onClick={() => handleDelete(ing.id, ing.name)} className="text-slate-300 hover:text-red-500 font-bold text-sm transition-colors">Del</button>
+                    <td className="p-6 text-center">
+                      <button 
+                        onClick={() => handleEdit(ing)} 
+                        className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl font-bold text-xs hover:bg-emerald-100 transition"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                    <td className="p-6 text-right">
+                      <button 
+                        onClick={() => handleDelete(ing.id, ing.name)} 
+                        className="p-2 hover:bg-red-50 rounded-lg transition-colors text-lg"
+                        title="Delete Ingredient"
+                      >
+                        ❌
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -112,15 +148,17 @@ export default function IngredientsPage() {
         </div>
       </div>
 
-      {/* Modal remains responsive */}
+      {/* Edit/Add Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 max-w-md w-full shadow-2xl">
-            <h2 className="text-3xl font-black mb-8 tracking-tight">Edit Ingredient</h2>
+            <h2 className="text-3xl font-black mb-8 tracking-tight">
+              {editingIng.id ? 'Edit Ingredient' : 'Add New Ingredient'}
+            </h2>
             <div className="space-y-5">
               <div>
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Name</label>
-                <input className="w-full p-4 bg-slate-50 rounded-xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none font-bold" value={editingIng.name} onChange={e => setEditingIng({...editingIng, name: e.target.value})} />
+                <input className="w-full p-4 bg-slate-50 rounded-xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none font-bold" value={editingIng.name} onChange={e => setEditingIng({...editingIng, name: e.target.value})} placeholder="e.g. Free Range Eggs" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -138,8 +176,10 @@ export default function IngredientsPage() {
               </div>
             </div>
             <div className="flex gap-3 mt-10">
-              <button onClick={() => setIsModalOpen(false)} className="flex-1 p-4 rounded-xl font-bold text-slate-400 hover:bg-slate-50">Cancel</button>
-              <button onClick={handleSave} className="flex-1 p-4 bg-emerald-600 text-white rounded-xl font-black shadow-lg">Save</button>
+              <button onClick={() => setIsModalOpen(false)} className="flex-1 p-4 rounded-xl font-bold text-slate-400 hover:bg-slate-50 transition">Cancel</button>
+              <button onClick={handleSave} className="flex-1 p-4 bg-emerald-600 text-white rounded-xl font-black shadow-lg hover:bg-emerald-700 transition transform active:scale-95">
+                {editingIng.id ? 'Save' : 'Create'}
+              </button>
             </div>
           </div>
         </div>
