@@ -117,7 +117,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
-            <p className="text-slate-400 font-bold text-xl">No recipes found matching "{search}"</p>
+            <p className="text-slate-400 font-bold text-xl">No recipes found matching "&quot;{search}&quot;"</p>
           </div>
         )}
       </div>
