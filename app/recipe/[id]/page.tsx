@@ -96,8 +96,29 @@ export default function RecipeDetail() {
         </div>
       </div>
 
-      <h1 className="text-6xl font-black tracking-tighter mb-2">{isEditing ? 'Editing Recipe' : recipe.title}</h1>
-      <p className="text-slate-400 font-bold uppercase text-xs tracking-widest mb-10">{recipe.servings} Servings</p>
+      {isEditing ? (
+        <div className="space-y-4 mb-10">
+           <input 
+            className="text-6xl font-black tracking-tighter w-full bg-transparent border-none ring-1 ring-slate-200 rounded-xl px-2 focus:ring-emerald-500 outline-none"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+           />
+           <div className="flex items-center gap-2">
+             <input 
+              type="number"
+              className="font-bold uppercase text-xs tracking-widest w-16 p-2 ring-1 ring-slate-200 rounded-lg outline-none focus:ring-emerald-500"
+              value={editServings}
+              onChange={(e) => setEditServings(parseInt(e.target.value))}
+             />
+             <span className="text-slate-400 font-bold uppercase text-xs tracking-widest">Servings</span>
+           </div>
+        </div>
+      ) : (
+        <>
+          <h1 className="text-6xl font-black tracking-tighter mb-2">{recipe.title}</h1>
+          <p className="text-slate-400 font-bold uppercase text-xs tracking-widest mb-10">{recipe.servings} Servings</p>
+        </>
+      )}
 
       <div className="grid grid-cols-2 gap-4 mb-12">
         <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100">
@@ -170,9 +191,17 @@ export default function RecipeDetail() {
 
         <div>
           <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6">Method</h3>
-          <p className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm leading-relaxed text-slate-600 whitespace-pre-wrap">
-            {recipe.method}
-          </p>
+          {isEditing ? (
+            <textarea
+              className="w-full h-64 p-8 rounded-[2rem] border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none font-sans leading-relaxed text-slate-600 shadow-sm"
+              value={editMethod}
+              onChange={(e) => setEditMethod(e.target.value)}
+            />
+          ) : (
+            <p className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm leading-relaxed text-slate-600 whitespace-pre-wrap">
+              {recipe.method}
+            </p>
+          )}
         </div>
       </div>
     </div>
